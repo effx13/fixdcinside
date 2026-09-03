@@ -65,13 +65,21 @@ function content(post: Post): string {
   return [`<p><b>${escapeHtml(post.title)}</b></p>`, ...paragraphs, `<p>${stats}</p>`].join('');
 }
 
+/** A Mastodon-shaped handle; the writer's nickname stays in display_name. */
+function handle(post: Post): string {
+  const raw = post.author.uid ?? post.galleryId;
+  return raw.replace(/[^A-Za-z0-9_.-]/g, '') || post.galleryId;
+}
+
 function displayName(post: Post): string {
   if (post.author.fixed) return post.author.nick;
   return post.author.ip ? `${post.author.nick} (${post.author.ip})` : post.author.nick;
 }
 
 export function renderActivity(post: Post, origin: string, brand: string): Record<string, unknown> {
-  const created = post.createdAt ?? new Date().toISOString();
+  // Mastodon timestamps are UTC with a Z; an offset is valid ISO 8601 but is
+  // not what a client parsing this expects to see.
+  const created = new Date(post.createdAt ?? Date.now()).toISOString();
   const galleryUrl = post.url.replace(/\/board\/view\/.*$/, `/board/lists/?id=${post.galleryId}`);
 
   return {
@@ -91,9 +99,11 @@ export function renderActivity(post: Post, origin: string, brand: string): Recor
     media_attachments: attachments(post, origin),
     account: {
       id: post.author.uid ?? post.galleryId,
+      // Mastodon usernames are handles, not display names: a Korean nickname
+      // with spaces belongs in display_name and nowhere else.
       display_name: displayName(post),
-      username: post.author.uid ?? post.author.nick,
-      acct: `${post.author.uid ?? post.author.nick}@${post.galleryName}`,
+      username: handle(post),
+      acct: handle(post),
       url: galleryUrl,
       uri: galleryUrl,
       created_at: created,

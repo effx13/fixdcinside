@@ -9,6 +9,7 @@ import { truncate } from '../src/parser/text';
 import { embedCoverUrl, renderListEmbed, renderPostEmbed, type EmbedContext } from '../src/render/embed';
 import type { ListTarget, PostTarget } from '../src/types';
 import { isBot } from '../src/util/bots';
+import { decodeSnowcode } from '../src/util/snowcode';
 import { escapeHtml } from '../src/util/html';
 
 const fixture = (name: string) => readFileSync(join(__dirname, 'fixtures', name), 'utf8');
@@ -55,9 +56,15 @@ describe('renderPostEmbed', () => {
     // An og:image is what makes Discord stop at its own link embed.
     expect(rendered).not.toContain('og:image');
     expect(rendered).not.toContain('twitter:image');
-    expect(rendered).toContain(
-      '<link rel="alternate" type="application/activity+json" href="https://fixdcinside.com/users/mgallery.itxbuild/statuses/464460">',
-    );
+    const href = rendered.split('type="application/activity+json" href="')[1]?.split('"')[0] ?? '';
+    expect(href).toMatch(/^https:\/\/fixdcinside\.com\/users\/itxbuild\/statuses\/\d+$/);
+    // Discord reads only the id off that link and calls /api/v1/statuses/<id>,
+    // so the id is what has to say which post to fetch.
+    expect(decodeSnowcode(href.split('/').pop()!)).toEqual({
+      b: 'mgallery',
+      g: 'itxbuild',
+      n: '464460',
+    });
   });
 
   it('keeps Open Graph media for everyone else, and no activity link', () => {

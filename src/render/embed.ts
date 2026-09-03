@@ -4,6 +4,7 @@ import { isContentMedia, pickCover } from '../parser/media';
 import { truncate } from '../parser/text';
 import type { GalleryList, Media, Post } from '../types';
 import { escapeHtml } from '../util/html';
+import { encodeSnowcode } from '../util/snowcode';
 import { ICON_PNG_SIZES, renderListTemplate, renderPostTemplate } from './templates.generated';
 
 /** Shows up as the coloured bar on the left of a Discord embed. */
@@ -107,7 +108,13 @@ export function renderPostEmbed(post: Post, ctx: EmbedContext): string {
       imageHeight: ctx.activity ? undefined : lead?.height,
       ...iconLinks(ctx),
       activity: ctx.activity,
-      activityUrl: `${ctx.origin}/users/${post.board === 'gall' ? '' : `${post.board}.`}${post.galleryId}/statuses/${post.no}`,
+      // Cosmetic path; Discord only reads the id off the end and calls
+      // /api/v1/statuses/{id}. The id carries the post reference.
+      activityUrl: `${ctx.origin}/users/${post.galleryId}/statuses/${encodeSnowcode({
+        b: post.board,
+        g: post.galleryId,
+        n: post.no,
+      })}`,
       oembedUrl: oembedUrl(
         ctx,
         `${formatAuthor(post)} · ${post.galleryName} · ${statsLine(post)}`,

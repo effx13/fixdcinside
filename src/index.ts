@@ -7,6 +7,7 @@ import { parseList } from './parser/list';
 import { ParseError, parsePost } from './parser/post';
 import { buildDcUrl, canonicalDcUrl, parseTarget } from './parser/url';
 import { renderActivity } from './render/activity';
+import { decodeSnowcode } from './util/snowcode';
 import {
   embedCoverUrl,
   renderListEmbed,
@@ -19,13 +20,6 @@ import type { GalleryList, Post, Target } from './types';
 import { isBot, isDiscord } from './util/bots';
 
 const app = new Hono<{ Bindings: Env }>();
-
-/** `mgallery.sff` -> ['mgallery', 'sff']; a bare id means a main gallery. */
-function splitHandle(handle: string): [string, string] {
-  const separator = handle.indexOf('.');
-  if (separator < 0) return ['board', handle];
-  return [handle.slice(0, separator), handle.slice(separator + 1)];
-}
 
 const HTML_HEADERS = {
   'Content-Type': 'text/html; charset=utf-8',
@@ -115,23 +109,28 @@ app.get('/oembed', (c) =>
 );
 
 /**
- * The Mastodon-style status Discord fetches from the activity+json alternate
- * link on a post page. Everything the embed shows - the avatar, every image,
- * and the footer with icon, name and timestamp - comes from here rather than
- * from the Open Graph tags.
+ * The Mastodon status Discord asks for after reading a post page.
+ *
+ * It never fetches the activity+json link itself: it takes the id out of that
+ * link and calls the instance API here, so this path has to be the Mastodon
+ * one. The id carries which post to fetch - see src/util/snowcode.ts.
  */
-app.get('/users/:handle/statuses/:no', async (c) => {
-  const [board, id] = splitHandle(c.req.param('handle') ?? '');
+app.get('/api/v1/statuses/:snowcode', async (c) => {
+  const reference = decodeSnowcode(c.req.param('snowcode') ?? '');
+  if (!reference?.g || !reference.n) return c.notFound();
+
   const url = new URL(c.req.url);
+  const prefix = reference.b && reference.b !== 'gall' ? `/${reference.b}` : '';
   const target = parseTarget(
-    new URL(`${url.origin}/${board}/board/view/?id=${encodeURIComponent(id)}&no=${c.req.param('no')}`),
+    new URL(
+      `${url.origin}${prefix}/board/view/?id=${encodeURIComponent(reference.g)}&no=${encodeURIComponent(reference.n)}`,
+    ),
   );
   if (!target || target.kind !== 'post') return c.notFound();
 
   try {
     const { value } = await resolve(target, c.env, c.executionCtx.waitUntil.bind(c.executionCtx));
     return c.json(renderActivity(value as Post, url.origin, c.env.BRAND_NAME), 200, {
-      'Content-Type': 'application/activity+json; charset=utf-8',
       'Cache-Control': 'public, max-age=300',
       'Access-Control-Allow-Origin': '*',
     });
