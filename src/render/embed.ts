@@ -87,7 +87,7 @@ export function renderPostEmbed(post: Post, ctx: EmbedContext): string {
       url: post.url,
       title: post.title,
       description: description(post),
-      siteName: `${ctx.env.BRAND_NAME} · ${post.galleryName}`,
+      siteName: ctx.env.BRAND_NAME,
       themeColor: THEME_COLOR,
       twitterCard: video ? 'player' : lead ? 'summary_large_image' : 'summary',
       video: video && {
@@ -95,8 +95,10 @@ export function renderPostEmbed(post: Post, ctx: EmbedContext): string {
         width: video.width ?? 1280,
         height: video.height ?? 720,
       },
-      // Discord shows only the first; Mastodon and Telegram vary, so list a few.
-      images: images.slice(0, 4).map((image) => proxied(ctx, image.url)),
+      // Exactly one. Several og:image tags make Discord render an image grid,
+      // and that layout drops the site row - the footer carrying the project
+      // name, icon and timestamp - and moves the provider to the top instead.
+      images: images.slice(0, 1).map((image) => proxied(ctx, image.url)),
       imageWidth: lead?.width,
       imageHeight: lead?.height,
       ...iconLinks(ctx),
@@ -123,7 +125,7 @@ export function renderListEmbed(list: GalleryList, ctx: EmbedContext): string {
       url: list.url,
       title: list.galleryName,
       description: truncate(lines.join('\n'), 600) || `${list.galleryName}에 표시할 글이 없습니다.`,
-      siteName: `${ctx.env.BRAND_NAME} · 갤러리`,
+      siteName: ctx.env.BRAND_NAME,
       themeColor: THEME_COLOR,
       ...iconLinks(ctx),
       oembedUrl: oembedUrl(

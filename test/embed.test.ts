@@ -62,9 +62,9 @@ describe('renderPostEmbed', () => {
     expect(html).toContain('rel="apple-touch-icon"');
   });
 
-  it('routes images through the proxy rather than linking dcinside directly', () => {
+  it('advertises exactly one image, which keeps Discord out of its grid layout', () => {
     const images = [...html.matchAll(/property="og:image" content="([^"]+)"/g)].map((match) => match[1]);
-    expect(images.length).toBeGreaterThan(0);
+    expect(images).toHaveLength(1);
     expect(images.every((url) => url?.startsWith('https://fixdcinside.com/media/'))).toBe(true);
     expect(html).not.toContain('dcimg6.dcinside.co.kr');
   });
@@ -97,7 +97,7 @@ describe('renderPostEmbed', () => {
       '쿨링덕후 · 조립 마이너 갤러리 · 👁️ 12,048   👍 132   👎 4   💬 47',
     );
     // og:site_name is the fallback for platforms that ignore oEmbed.
-    expect(html).toContain('content="FixDcinside · 조립 마이너 갤러리"');
+    expect(html).toContain('<meta property="og:site_name" content="FixDcinside">');
   });
 
   it('escapes markup from post content', () => {
