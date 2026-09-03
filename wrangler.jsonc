@@ -8,7 +8,13 @@
   // lands - measured in Los Angeles - and every one of its several round trips
   // to dcinside crosses the Pacific: a cold embed took 1.8s against 0.2s
   // fetching dcinside directly from Seoul.
-  "placement": { "region": "ap-northeast-2" },
+  "placement": { "region": "aws:ap-northeast-2" },
+  // Mirrors the custom domains already attached to the Worker. Without them
+  // here, every deploy detaches the domains and takes the site offline.
+  "routes": [
+    { "pattern": "fixdcinside.com", "zone_name": "fixdcinside.com", "custom_domain": true },
+    { "pattern": "gall.fixdcinside.com", "zone_name": "fixdcinside.com", "custom_domain": true },
+  ],
   "observability": { "enabled": true },
   "vars": {
     // BRAND_NAME shows up in og:site_name; BRAND_HOST is the deployed domain.
