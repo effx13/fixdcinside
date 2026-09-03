@@ -2,11 +2,17 @@ import { Hono } from 'hono';
 import { withCache } from './cache';
 import { LIST_CACHE_TTL, POST_CACHE_TTL } from './constants';
 import { DcFetchError, fetchPage } from './fetcher/dcinside';
-import { decodeMediaUrl, proxyMedia } from './fetcher/media';
+import { decodeMediaUrl, prefetchMedia, proxyMedia } from './fetcher/media';
 import { parseList } from './parser/list';
 import { ParseError, parsePost } from './parser/post';
 import { buildDcUrl, canonicalDcUrl, parseTarget } from './parser/url';
-import { renderListEmbed, renderOembed, renderPostEmbed, type EmbedContext } from './render/embed';
+import {
+  embedCoverUrl,
+  renderListEmbed,
+  renderOembed,
+  renderPostEmbed,
+  type EmbedContext,
+} from './render/embed';
 import type { GalleryList, Post, Target } from './types';
 import { isBot } from './util/bots';
 
@@ -65,7 +71,7 @@ app.get('/oembed', (c) =>
 app.get('/media/:token', async (c) => {
   const url = decodeMediaUrl(c.req.param('token'));
   if (!url) return c.text('bad media token', 400);
-  return proxyMedia(url, c.req.raw);
+  return proxyMedia(url, c.req.raw, c.executionCtx.waitUntil.bind(c.executionCtx));
 });
 
 /** JSON view of anything the embed routes can render. */
@@ -103,12 +109,22 @@ app.get('*', async (c) => {
   }
 
   const ctx: EmbedContext = { env: c.env, origin: url.origin };
+  const waitUntil = c.executionCtx.waitUntil.bind(c.executionCtx);
   try {
-    const { value, hit } = await resolve(target, c.env, c.executionCtx.waitUntil.bind(c.executionCtx));
-    const html =
-      target.kind === 'post'
-        ? renderPostEmbed(value as Post, ctx)
-        : renderListEmbed(value as GalleryList, ctx);
+    const { value, hit } = await resolve(target, c.env, waitUntil);
+
+    let html: string;
+    if (target.kind === 'post') {
+      const post = value as Post;
+      html = renderPostEmbed(post, ctx);
+      // The crawler asks for og:image right after this response. Start pulling
+      // it now so that request lands on a warm cache instead of a 4s origin.
+      const cover = embedCoverUrl(post);
+      if (cover) waitUntil(prefetchMedia(cover));
+    } else {
+      html = renderListEmbed(value as GalleryList, ctx);
+    }
+
     return c.html(html, 200, { ...HTML_HEADERS, 'X-Cache': hit ? 'HIT' : 'MISS' });
   } catch (error) {
     return errorResponse(error);

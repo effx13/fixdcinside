@@ -1,6 +1,6 @@
 import { MAX_EMBED_DESCRIPTION } from '../constants';
-import { encodeMediaUrl } from '../fetcher/media';
-import { pickCover } from '../parser/media';
+import { encodeMediaUrl, isAllowedMediaUrl } from '../fetcher/media';
+import { isContentMedia, pickCover } from '../parser/media';
 import { truncate } from '../parser/text';
 import type { GalleryList, Media, Post } from '../types';
 import { escapeHtml } from '../util/html';
@@ -56,11 +56,19 @@ function oembedUrl(ctx: EmbedContext, author: string, provider: string, url: str
   return `${ctx.origin}/oembed?${params.toString()}`;
 }
 
+/** The image a crawler will ask for next, if any - see prefetchMedia. */
+export function embedCoverUrl(post: Post): string | undefined {
+  return pickCover(post.media.filter((item) => isContentMedia(item) && isAllowedMediaUrl(item.url)))?.url;
+}
+
 export function renderPostEmbed(post: Post, ctx: EmbedContext): string {
-  const cover = pickCover(post.media);
+  // Old posts sometimes hotlink images from other sites, which the proxy will
+  // not serve. Advertising one produces a broken embed, so drop them here.
+  const usable = post.media.filter((item) => isContentMedia(item) && isAllowedMediaUrl(item.url));
+  const cover = pickCover(usable);
   const video: Media | undefined = cover?.kind === 'video' ? cover : undefined;
   // A video embed replaces the image card entirely, so only one of the two runs.
-  const images = video ? [] : post.media.filter((item) => item.kind === 'image' || item.kind === 'dccon');
+  const images = video ? [] : usable.filter((item) => item.kind === 'image' || item.kind === 'dccon');
   const lead = images[0];
 
   return renderPostTemplate(

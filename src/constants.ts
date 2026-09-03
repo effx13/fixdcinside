@@ -37,6 +37,13 @@ export const FORWARDED_PARAMS = [
 export const MAX_EMBED_DESCRIPTION = 340;
 export const FETCH_TIMEOUT_MS = 8000;
 
+/**
+ * Media gets a longer budget than pages: dcinside's image servers answer a
+ * Cloudflare data centre far slower than they answer a Korean home connection
+ * (measured at 3-4s cold), and a timeout here shows up as a broken embed.
+ */
+export const MEDIA_FETCH_TIMEOUT_MS = 20000;
+
 /** Bump when a parser change makes older cached entries wrong. */
 export const CACHE_SCHEMA_VERSION = 1;
 

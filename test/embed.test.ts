@@ -2,10 +2,11 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { decodeMediaUrl, encodeMediaUrl, isAllowedMediaUrl } from '../src/fetcher/media';
+import type { Post } from '../src/types';
 import { parseList } from '../src/parser/list';
 import { parsePost } from '../src/parser/post';
 import { truncate } from '../src/parser/text';
-import { renderListEmbed, renderPostEmbed, type EmbedContext } from '../src/render/embed';
+import { embedCoverUrl, renderListEmbed, renderPostEmbed, type EmbedContext } from '../src/render/embed';
 import type { ListTarget, PostTarget } from '../src/types';
 import { isBot } from '../src/util/bots';
 import { escapeHtml } from '../src/util/html';
@@ -92,6 +93,67 @@ describe('renderPostEmbed', () => {
     const rendered = renderPostEmbed(hostile, ctx);
     expect(rendered).not.toContain('<script>alert(1)</script>');
     expect(rendered).toContain('&lt;script&gt;');
+  });
+
+  it('drops images the proxy cannot serve rather than advertising a broken one', () => {
+    // Old posts hotlink dead external blogs; those must not become og:image.
+    const external: Post = {
+      ...post,
+      media: [
+        { kind: 'image', url: 'https://blog.dreamwiz.com/gone.jpg' },
+        { kind: 'image', url: 'https://blogfile.paran.com/gone.jpg' },
+      ],
+    };
+    const rendered = renderPostEmbed(external, ctx);
+    expect(rendered).not.toContain('og:image');
+    expect(rendered).not.toContain('dreamwiz');
+    expect(rendered).toContain('<meta name="twitter:card" content="summary">');
+  });
+
+  it('keeps the dcinside images when a post mixes both', () => {
+    const mixed: Post = {
+      ...post,
+      media: [
+        { kind: 'image', url: 'https://blog.dreamwiz.com/gone.jpg' },
+        { kind: 'image', url: 'https://dcimg6.dcinside.co.kr/viewimage.php?id=a' },
+      ],
+    };
+    const images = [...renderPostEmbed(mixed, ctx).matchAll(/property="og:image" content="([^"]+)"/g)];
+    expect(images).toHaveLength(1);
+    expect(decodeMediaUrl(images[0]?.[1]?.split('/media/')[1] ?? '')).toContain('dcimg6');
+  });
+
+  it("skips dcinside's noimage.gif placeholder", () => {
+    // dcinside substitutes this 154-byte gif for attachments it can no longer
+    // serve; it is on an allowed host, so only the content check catches it.
+    const placeholder: Post = {
+      ...post,
+      media: [{ kind: 'image', url: 'https://gall.dcinside.com/_upload/img/noimage.gif' }],
+    };
+    const rendered = renderPostEmbed(placeholder, ctx);
+    expect(rendered).not.toContain('og:image');
+    expect(rendered).not.toContain('noimage');
+  });
+
+  it('leads with the largest photo when dcinside gives dimensions', () => {
+    const banner: Post = {
+      ...post,
+      media: [
+        {
+          kind: 'image',
+          url: 'https://dcimg6.dcinside.co.kr/viewimage.php?id=banner',
+          width: 619,
+          height: 59,
+        },
+        {
+          kind: 'image',
+          url: 'https://dcimg6.dcinside.co.kr/viewimage.php?id=photo',
+          width: 600,
+          height: 450,
+        },
+      ],
+    };
+    expect(embedCoverUrl(banner)).toContain('id=photo');
   });
 
   it('falls back to a plain summary card for a post with no media', () => {

@@ -97,9 +97,32 @@ function embedFrom(url: string | null): Media | null {
   return { kind: 'embed', url };
 }
 
-/** The image an embed should lead with: a real photo beats a sticker. */
+/**
+ * Is this an actual attachment rather than page furniture?
+ *
+ * Uploads always go through `viewimage.php` (photos) or `dccon.php`
+ * (stickers). Anything else on a dcinside host is chrome - most importantly
+ * `_upload/img/noimage.gif`, the 154-byte placeholder dcinside substitutes for
+ * an attachment it can no longer serve. Advertising that as og:image gives a
+ * crawler a broken-looking tile.
+ */
+export function isContentMedia(media: Media): boolean {
+  return /\/(viewimage|dccon)\.php/.test(media.url);
+}
+
+/** Bigger is better when dcinside tells us the size; ties keep document order. */
+function area(media: Media): number {
+  return media.width && media.height ? media.width * media.height : 0;
+}
+
+/**
+ * The image an embed should lead with: a real photo beats a sticker, and a
+ * known-large photo beats a decorative banner that happens to come first.
+ */
 export function pickCover(media: Media[]): Media | undefined {
-  return (
-    media.find((item) => item.kind === 'image') ?? media.find((item) => item.kind === 'video') ?? media[0]
-  );
+  const content = media.filter(isContentMedia);
+  const photos = content.filter((item) => item.kind === 'image');
+  const largest = [...photos].sort((a, b) => area(b) - area(a))[0];
+  if (largest && area(largest) > 0) return largest;
+  return photos[0] ?? content.find((item) => item.kind === 'video') ?? content[0];
 }
