@@ -19,8 +19,8 @@ describe('parsePost - desktop layout', () => {
     expect(post.headText).toBe('[정보]');
   });
 
-  it('reads the gallery name without the minor-gallery badge', () => {
-    expect(post.galleryName).toBe('조립 갤러리');
+  it('folds the minor-gallery badge into the name', () => {
+    expect(post.galleryName).toBe('조립 마이너 갤러리');
   });
 
   it('reads a logged-in (고정닉) author', () => {
@@ -106,8 +106,8 @@ describe('parsePost - mobile layout', () => {
 describe('parseList', () => {
   const gallery = parseList(fixture('desktop-list.html'), list, 'https://example.test/list');
 
-  it('reads the gallery name without the minor-gallery badge', () => {
-    expect(gallery.galleryName).toBe('조립 갤러리');
+  it('folds the minor-gallery badge into the name', () => {
+    expect(gallery.galleryName).toBe('조립 마이너 갤러리');
   });
 
   it('drops the survey and ad rows dcinside injects', () => {

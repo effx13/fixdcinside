@@ -24,6 +24,12 @@ const guide: PostTarget = { kind: 'post', board: 'mgallery', id: 'itxbuild', no:
 const walk: PostTarget = { kind: 'post', board: 'gall', id: 'walking', no: '9001', extra: {} };
 const list: ListTarget = { kind: 'list', board: 'mgallery', id: 'itxbuild', extra: {} };
 
+/** The oEmbed link's query, decoded - this is what Discord fetches. */
+function oembedParams(html: string): URLSearchParams {
+  const query = html.split('/oembed?')[1]?.split('"')[0] ?? '';
+  return new URLSearchParams(query.replaceAll('&amp;', '&'));
+}
+
 const post = parsePost(
   fixture('desktop-post.html'),
   guide,
@@ -62,8 +68,23 @@ describe('renderPostEmbed', () => {
     expect(html).toContain(escapeHtml(post.url));
   });
 
-  it('mentions extra attachments in the description', () => {
-    expect(html).toMatch(/이미지 2장/);
+  it('keeps the description to the post body, with no attachment badges', () => {
+    const description = html.match(/property="og:description" content="([^"]+)"/s)?.[1];
+    expect(description).toContain('쿨러 높이 제한');
+    expect(description).not.toMatch(/이미지 d+장/);
+    expect(description).not.toMatch(/동영상 d+개/);
+  });
+
+  it('names the gallery in the oEmbed provider, which Discord shows above the title', () => {
+    // Discord's provider line overrides og:site_name, so the gallery has to be here.
+    expect(oembedParams(html).get('provider')).toMatch(/^조립 마이너 갤러리 · /);
+    // og:site_name is the fallback for platforms that ignore oEmbed.
+    expect(html).toContain('content="fixdcinside · 조립 마이너 갤러리"');
+  });
+
+  it('still carries the counters alongside the gallery', () => {
+    expect(oembedParams(html).get('provider')).toContain('12,048');
+    expect(oembedParams(html).get('author')).toBe('쿨링덕후');
   });
 
   it('escapes markup from post content', () => {
@@ -98,6 +119,10 @@ describe('renderListEmbed', () => {
   it('summarises ordinary posts and leaves notices out', () => {
     expect(html).toContain('ITX 케이스 입문 가이드');
     expect(html).not.toContain('갤러리 이용 안내');
+  });
+
+  it('names the gallery in the oEmbed provider', () => {
+    expect(oembedParams(html).get('provider')).toMatch(/^조립 마이너 갤러리 · /);
   });
 });
 

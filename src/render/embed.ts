@@ -43,23 +43,16 @@ function statsLine(post: Post): string {
 }
 
 function description(post: Post): string {
-  const images = post.media.filter((item) => item.kind === 'image').length;
-  const videos = post.media.filter((item) => item.kind === 'video').length;
-
-  const badges: string[] = [];
-  if (images > 1) badges.push(`🖼 이미지 ${images}장`);
-  if (videos > 0) badges.push(`🎬 동영상 ${videos}개`);
-
-  const body = truncate(post.text, MAX_EMBED_DESCRIPTION - (badges.length ? 24 : 0));
-  return [body, badges.join('  ')].filter(Boolean).join('\n\n') || statsLine(post);
+  return truncate(post.text, MAX_EMBED_DESCRIPTION) || statsLine(post);
 }
 
 /**
- * Discord reads oEmbed to fill the small line above the embed title, which is
- * the only place left for author and stats once og:description holds the body.
+ * Discord reads oEmbed to fill the two small lines above the embed title, and
+ * its provider line *overrides* og:site_name - so the gallery has to be stated
+ * here or it never shows up at all.
  */
-function oembedUrl(ctx: EmbedContext, author: string, stats: string, url: string): string {
-  const params = new URLSearchParams({ author, stats, url });
+function oembedUrl(ctx: EmbedContext, author: string, provider: string, url: string): string {
+  const params = new URLSearchParams({ author, provider, url });
   return `${ctx.origin}/oembed?${params.toString()}`;
 }
 
@@ -90,7 +83,7 @@ export function renderPostEmbed(post: Post, ctx: EmbedContext): string {
       images: images.slice(0, 4).map((image) => proxied(ctx, image.url)),
       imageWidth: lead?.width,
       imageHeight: lead?.height,
-      oembedUrl: oembedUrl(ctx, formatAuthor(post), statsLine(post), post.url),
+      oembedUrl: oembedUrl(ctx, formatAuthor(post), `${post.galleryName} · ${statsLine(post)}`, post.url),
     },
     escapeFn,
   );
@@ -113,7 +106,7 @@ export function renderListEmbed(list: GalleryList, ctx: EmbedContext): string {
       oembedUrl: oembedUrl(
         ctx,
         `${list.galleryName} (${list.galleryId})`,
-        `글 ${posts.length}개 · 공지 ${noticeCount}개`,
+        `${list.galleryName} · 글 ${posts.length}개 · 공지 ${noticeCount}개`,
         list.url,
       ),
     },
@@ -127,7 +120,7 @@ export function renderOembed(params: URLSearchParams, env: Env): Record<string, 
     type: 'link',
     author_name: params.get('author') ?? '',
     author_url: params.get('url') ?? '',
-    provider_name: params.get('stats') ?? env.BRAND_NAME,
+    provider_name: params.get('provider') ?? env.BRAND_NAME,
     provider_url: params.get('url') ?? `https://${env.BRAND_HOST}`,
   };
 }

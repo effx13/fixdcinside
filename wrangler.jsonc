@@ -16,5 +16,5 @@
   // one upstream fetch. Create it with:
   //   pnpm wrangler kv namespace create CACHE
   // then paste the returned id here and rerun `pnpm cf-typegen`.
-  "kv_namespaces": [{ "binding": "CACHE", "id": "REPLACE_WITH_KV_NAMESPACE_ID" }],
+  "kv_namespaces": [{ "binding": "CACHE", "id": "e7456e58485f44ddae322a696f945bdc" }],
 }
