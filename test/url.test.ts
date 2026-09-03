@@ -48,6 +48,14 @@ describe('parseTarget', () => {
     expect(parseTarget(at('/sff/1/2/3'))).toBeNull();
   });
 
+  it("refuses to read the worker's own routes as gallery names", () => {
+    expect(parseTarget(at('/media/'))).toBeNull();
+    expect(parseTarget(at('/media/abc'))).toBeNull();
+    expect(parseTarget(at('/api'))).toBeNull();
+    expect(parseTarget(at('/oembed'))).toBeNull();
+    expect(parseTarget(at('/robots.txt'))).toBeNull();
+  });
+
   it('drops params dcinside does not need', () => {
     const target = parseTarget(at('/board/view/?id=cat&no=1&utm_source=evil&page=3'));
     expect(target?.extra).toEqual({ page: '3' });

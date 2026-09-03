@@ -3,6 +3,12 @@ import type { BoardKind, ListTarget, PostTarget, Target } from '../types';
 
 const BOARD_KINDS: BoardKind[] = ['mgallery', 'mini', 'person'];
 
+/**
+ * The worker's own routes. Without this, `/media` would be read as the
+ * shorthand for a gallery called "media" and redirect to dcinside.
+ */
+const RESERVED_PATHS = new Set(['api', 'media', 'oembed', 'robots.txt', 'favicon.ico']);
+
 function pickExtra(params: URLSearchParams): Record<string, string> {
   const extra: Record<string, string> = {};
   for (const key of FORWARDED_PARAMS) {
@@ -27,6 +33,7 @@ function pickExtra(params: URLSearchParams): Record<string, string> {
 export function parseTarget(url: URL): Target | null {
   const segments = url.pathname.split('/').filter(Boolean).map(decodeURIComponent);
   if (segments.length === 0) return null;
+  if (RESERVED_PATHS.has(segments[0]!)) return null;
 
   let board: BoardKind = 'gall';
   if (BOARD_KINDS.includes(segments[0] as BoardKind)) {
