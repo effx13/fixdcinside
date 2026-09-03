@@ -13,6 +13,8 @@ export interface EmbedContext {
   env: Env;
   /** Origin of this worker, used to build proxy URLs. */
   origin: string;
+  /** Hand Discord the Mastodon path instead of Open Graph media. See isDiscord. */
+  activity: boolean;
 }
 
 /**
@@ -89,19 +91,22 @@ export function renderPostEmbed(post: Post, ctx: EmbedContext): string {
       description: description(post),
       siteName: ctx.env.BRAND_NAME,
       themeColor: THEME_COLOR,
-      twitterCard: video ? 'player' : lead ? 'summary_large_image' : 'summary',
-      video: video && {
-        url: proxied(ctx, video.url),
-        width: video.width ?? 1280,
-        height: video.height ?? 720,
-      },
-      // Exactly one. Several og:image tags make Discord render an image grid,
-      // and that layout drops the site row - the footer carrying the project
-      // name, icon and timestamp - and moves the provider to the top instead.
-      images: images.slice(0, 1).map((image) => proxied(ctx, image.url)),
-      imageWidth: lead?.width,
-      imageHeight: lead?.height,
+      twitterCard: ctx.activity ? 'summary' : video ? 'player' : lead ? 'summary_large_image' : 'summary',
+      video: ctx.activity
+        ? undefined
+        : video && {
+            url: proxied(ctx, video.url),
+            width: video.width ?? 1280,
+            height: video.height ?? 720,
+          },
+      // Withheld from Discord on purpose: given an og:image it renders its own
+      // link embed and never follows the activity link, and that embed has no
+      // footer, no avatar and room for a single picture.
+      images: ctx.activity ? [] : images.slice(0, 1).map((image) => proxied(ctx, image.url)),
+      imageWidth: ctx.activity ? undefined : lead?.width,
+      imageHeight: ctx.activity ? undefined : lead?.height,
       ...iconLinks(ctx),
+      activity: ctx.activity,
       activityUrl: `${ctx.origin}/users/${post.board === 'gall' ? '' : `${post.board}.`}${post.galleryId}/statuses/${post.no}`,
       oembedUrl: oembedUrl(
         ctx,

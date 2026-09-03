@@ -53,7 +53,9 @@
 <link rel="icon" href="<%= it.iconIco %>" type="image/x-icon" sizes="32x32">
 <link rel="apple-touch-icon" href="<%= it.appleIcon %>">
 <link rel="alternate" type="application/json+oembed" href="<%= it.oembedUrl %>" title="<%= it.title %>">
+<% if (it.activity) { -%>
 <link rel="alternate" type="application/activity+json" href="<%= it.activityUrl %>">
+<% } -%>
 <link rel="canonical" href="<%= it.url %>">
 <meta http-equiv="refresh" content="0; url=<%= it.url %>">
 </head>

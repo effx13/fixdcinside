@@ -19,7 +19,10 @@ const env: Env = {
   // Rendering never touches KV; the cache is exercised through the Worker.
   CACHE: undefined as unknown as KVNamespace,
 };
-const ctx: EmbedContext = { env, origin: 'https://fixdcinside.com' };
+/** A crawler that is not Discord: Open Graph media, no activity link. */
+const ctx: EmbedContext = { env, origin: 'https://fixdcinside.com', activity: false };
+/** Discord: no media tags, so it follows the activity link instead. */
+const discordCtx: EmbedContext = { ...ctx, activity: true };
 
 const guide: PostTarget = { kind: 'post', board: 'mgallery', id: 'itxbuild', no: '464460', extra: {} };
 const walk: PostTarget = { kind: 'post', board: 'gall', id: 'walking', no: '9001', extra: {} };
@@ -45,6 +48,21 @@ describe('renderPostEmbed', () => {
     expect(html).toContain('<meta property="og:title" content="ITX 케이스 입문 가이드">');
     expect(html).toContain('og:url');
     expect(html).toContain('<meta name="twitter:card" content="summary_large_image">');
+  });
+
+  it('withholds media tags from Discord and points it at the activity link', () => {
+    const rendered = renderPostEmbed(post, discordCtx);
+    // An og:image is what makes Discord stop at its own link embed.
+    expect(rendered).not.toContain('og:image');
+    expect(rendered).not.toContain('twitter:image');
+    expect(rendered).toContain(
+      '<link rel="alternate" type="application/activity+json" href="https://fixdcinside.com/users/mgallery.itxbuild/statuses/464460">',
+    );
+  });
+
+  it('keeps Open Graph media for everyone else, and no activity link', () => {
+    expect(html).toContain('og:image');
+    expect(html).not.toContain('activity+json');
   });
 
   it('omits og:type on a post with no video', () => {

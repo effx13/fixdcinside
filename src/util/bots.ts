@@ -43,6 +43,17 @@ const BOT_PATTERNS = [
   'preview',
 ];
 
+/**
+ * Discord gets a different page: no media tags at all, plus an
+ * application/activity+json link. Given an og:image it renders its own link
+ * embed and never follows that link, and that embed has no footer, no avatar
+ * and room for one picture. Without one it follows the link and uses its
+ * Mastodon renderer, which has all three.
+ */
+export function isDiscord(userAgent: string | null | undefined): boolean {
+  return (userAgent ?? '').includes('Discordbot');
+}
+
 export function isBot(userAgent: string | null | undefined): boolean {
   if (!userAgent) return true; // No UA at all is almost always a scraper.
   const ua = userAgent.toLowerCase();

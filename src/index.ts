@@ -16,7 +16,7 @@ import {
 } from './render/embed';
 import { FAVICON_ICO_BASE64, ICON_PNG_BASE64, ICON_PNG_SIZES, ICON_SVG } from './render/templates.generated';
 import type { GalleryList, Post, Target } from './types';
-import { isBot } from './util/bots';
+import { isBot, isDiscord } from './util/bots';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -181,7 +181,11 @@ app.get('*', async (c) => {
     return c.redirect(dcUrl, 302);
   }
 
-  const ctx: EmbedContext = { env: c.env, origin: url.origin };
+  const ctx: EmbedContext = {
+    env: c.env,
+    origin: url.origin,
+    activity: isDiscord(c.req.header('User-Agent')),
+  };
   const waitUntil = c.executionCtx.waitUntil.bind(c.executionCtx);
   try {
     const { value, hit } = await resolve(target, c.env, waitUntil);
