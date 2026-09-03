@@ -102,6 +102,7 @@ export function renderPostEmbed(post: Post, ctx: EmbedContext): string {
       imageWidth: lead?.width,
       imageHeight: lead?.height,
       ...iconLinks(ctx),
+      activityUrl: `${ctx.origin}/users/${post.board === 'gall' ? '' : `${post.board}.`}${post.galleryId}/statuses/${post.no}`,
       oembedUrl: oembedUrl(
         ctx,
         `${formatAuthor(post)} · ${post.galleryName} · ${statsLine(post)}`,

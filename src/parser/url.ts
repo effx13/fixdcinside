@@ -11,6 +11,7 @@ const RESERVED_PATHS = new Set([
   'api',
   'media',
   'oembed',
+  'users',
   'robots.txt',
   'icon.svg',
   'favicon.ico',

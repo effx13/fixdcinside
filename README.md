@@ -64,6 +64,7 @@ https://fixdcinside.com/api/mgallery/board/view/?id=sff&no=1719767
 - `src/parser/post.ts` · `list.ts` — PC/모바일 두 레이아웃 파싱
 - `src/parser/media.ts` — 사진·디시콘·동영상·외부 임베드 추출 (모바일의 `data-original` 지연 로딩 포함)
 - `src/fetcher/media.ts` — 이미지 프록시. 디시 호스트만 허용해 오픈 프록시가 되지 않게 막습니다
+- `src/render/activity.ts` — 디스코드용 마스토돈 형식 status 생성
 - `src/render/embed.ts` — 임베드 뷰 모델 구성 후 EJS 템플릿 렌더
 - `src/cache.ts` — 파싱 결과 KV 캐시
 
@@ -90,6 +91,19 @@ pnpm build:favicon   # icon.svg를 고쳤을 때
 ```
 
 작업 중 눈으로 확인하려면 `node scripts/logo-preview.mjs`가 여러 크기로 렌더한 HTML을 만들어 줍니다.
+
+### 디스코드 임베드가 마스토돈 글인 척하는 이유
+
+글 페이지에는 `application/activity+json` 대체 링크가 들어 있고, 디스코드는 그걸 따라가
+`/users/{갤러리}/statuses/{글번호}`에서 **마스토돈 API v1 형식의 status**를 받아갑니다.
+
+디스코드의 일반 링크 임베드로는 원하는 모양이 안 나옵니다 — 사이트 이름이 상단 provider 자리로 가고,
+아바타·타임스탬프 자리가 없으며, 이미지도 한 장만 제대로 다룹니다. 반면 마스토돈 렌더러에는 그 넷이
+전부 있습니다: 아바타 달린 작성자, 본문, 첨부 전체, 그리고 아이콘·이름·시각이 붙는 하단 푸터.
+FxEmbed도 같은 수를 쓰며, 소스의 표현을 그대로 옮기면 "convince Discord that you are actually a
+Mastodon link"입니다.
+
+Open Graph 태그는 그대로 두어 마스토돈 경로를 쓰지 않는 텔레그램 같은 곳의 폴백으로 씁니다.
 
 ### 캐시 (KV)
 
