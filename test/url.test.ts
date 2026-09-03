@@ -54,6 +54,7 @@ describe('parseTarget', () => {
     expect(parseTarget(at('/api'))).toBeNull();
     expect(parseTarget(at('/oembed'))).toBeNull();
     expect(parseTarget(at('/robots.txt'))).toBeNull();
+    expect(parseTarget(at('/icon.svg'))).toBeNull();
   });
 
   it('drops params dcinside does not need', () => {

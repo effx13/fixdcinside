@@ -7,3 +7,4 @@ src/render/templates.generated.ts
 # Fixtures mirror dcinside's markup; reformatting would defeat their purpose.
 test/fixtures/
 _bench*
+_logo_preview.html

@@ -16,6 +16,8 @@ import ejs from 'ejs';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const templateDir = join(root, 'templates');
 const outFile = join(root, 'src', 'render', 'templates.generated.ts');
+const iconFile = join(root, 'assets', 'icon.svg');
+const faviconFile = join(root, 'assets', 'favicon.ico');
 
 /** `post.ejs` -> `renderPostTemplate` */
 const exportName = (file) =>
@@ -62,5 +64,11 @@ type EscapeFn = (value: unknown) => string;
 type TemplateLocals = Record<string, any>;
 `;
 
-writeFileSync(outFile, `${banner}\n${files.map(compile).join('\n\n')}\n`);
+/** Both icons ship inside the bundle so the files in assets/ stay the only copies. */
+const icon = [
+  `export const ICON_SVG = ${JSON.stringify(readFileSync(iconFile, 'utf8').trim())};`,
+  `export const FAVICON_ICO_BASE64 = ${JSON.stringify(readFileSync(faviconFile).toString('base64'))};`,
+].join('\n\n');
+
+writeFileSync(outFile, `${banner}\n${icon}\n\n${files.map(compile).join('\n\n')}\n`);
 console.log(`compiled ${files.length} template(s) -> ${relative(root, outFile)}`);

@@ -7,7 +7,7 @@ const BOARD_KINDS: BoardKind[] = ['mgallery', 'mini', 'person'];
  * The worker's own routes. Without this, `/media` would be read as the
  * shorthand for a gallery called "media" and redirect to dcinside.
  */
-const RESERVED_PATHS = new Set(['api', 'media', 'oembed', 'robots.txt', 'favicon.ico']);
+const RESERVED_PATHS = new Set(['api', 'media', 'oembed', 'robots.txt', 'icon.svg', 'favicon.ico']);
 
 function pickExtra(params: URLSearchParams): Record<string, string> {
   const extra: Record<string, string> = {};

@@ -13,6 +13,7 @@ import {
   renderPostEmbed,
   type EmbedContext,
 } from './render/embed';
+import { FAVICON_ICO_BASE64, ICON_SVG } from './render/templates.generated';
 import type { GalleryList, Post, Target } from './types';
 import { isBot } from './util/bots';
 
@@ -61,6 +62,23 @@ function errorResponse(error: unknown): Response {
 
 /** Nothing to serve at the root - send people to the project page. */
 app.get('/', (c) => c.redirect(c.env.REPO_URL, 302));
+
+/** Decoded once per isolate rather than on every request. */
+const FAVICON_ICO = Uint8Array.from(atob(FAVICON_ICO_BASE64), (char) => char.charCodeAt(0));
+
+app.get('/favicon.ico', (c) =>
+  c.body(FAVICON_ICO, 200, {
+    'Content-Type': 'image/x-icon',
+    'Cache-Control': 'public, max-age=86400',
+  }),
+);
+
+app.get('/icon.svg', (c) =>
+  c.body(ICON_SVG, 200, {
+    'Content-Type': 'image/svg+xml; charset=utf-8',
+    'Cache-Control': 'public, max-age=86400',
+  }),
+);
 
 app.get('/robots.txt', (c) => c.text('User-agent: *\nDisallow: /media/\nAllow: /\n'));
 

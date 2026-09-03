@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="FixDcinside">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.55" y2="1">
+      <stop offset="0" stop-color="#5b6ad0"/>
+      <stop offset="1" stop-color="#28306e"/>
+    </linearGradient>
+    <!-- userSpaceOnUse: the handle is a horizontal line, and an
+         objectBoundingBox gradient on a zero-height box paints nothing. -->
+    <linearGradient id="steel" gradientUnits="userSpaceOnUse" x1="-78" y1="-26" x2="68" y2="26">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#aeb9de"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="256" height="256" rx="58" fill="url(#bg)"/>
+
+  <!-- Spanner, resting on top of the wordmark. -->
+  <g transform="translate(128 82) rotate(-12)" fill="none" stroke="url(#steel)" stroke-linecap="round">
+    <path d="M-42 0 H26" stroke-width="17"/>
+    <circle cx="48" cy="0" r="18" stroke-width="13"/>
+    <path d="M-56 -15 A18 18 0 1 0 -56 15" stroke-width="13"/>
+  </g>
+
+  <!-- Wordmark drawn as geometry, not text, so it renders identically everywhere. -->
+  <g fill="none" stroke="#ffffff" stroke-width="20" stroke-linecap="round">
+    <circle cx="86" cy="168" r="32"/>
+    <path d="M118 126 V168"/>
+    <path d="M194 147 A32 32 0 1 0 194 189"/>
+  </g>
+</svg>

@@ -1,10 +1,14 @@
-# fixdcinside
+<img src="assets/icon.svg" alt="" width="88" align="left" hspace="12">
+
+# FixDcinside
 
 디시인사이드 링크를 디스코드·텔레그램·마스토돈에서 제대로 미리보기 되게 만드는 프록시.
 [FxEmbed](https://github.com/FxEmbed/FxEmbed)의 디시인사이드 판입니다.
 
 Cloudflare Workers 위에서 **HTTP 요청과 HTML 파싱만으로** 동작합니다. Chromium·Puppeteer·Playwright 같은
 헤드리스 브라우저를 쓰지 않습니다.
+
+<br clear="left">
 
 ## 왜 필요한가
 
@@ -75,6 +79,17 @@ https://fixdcinside.com/api/mgallery/board/view/?id=sff&no=1719767
 ```bash
 pnpm build:templates
 ```
+
+### 아이콘
+
+로고는 `assets/icon.svg` 하나가 원본입니다. `assets/favicon.ico`(16·32·48·64px)는 거기서 생성하고,
+둘 다 번들에 포함되어 워커가 `/icon.svg`와 `/favicon.ico`로 서빙합니다.
+
+```bash
+pnpm build:favicon   # icon.svg를 고쳤을 때
+```
+
+작업 중 눈으로 확인하려면 `node scripts/logo-preview.mjs`가 여러 크기로 렌더한 HTML을 만들어 줍니다.
 
 ### 캐시 (KV)
 

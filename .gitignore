@@ -10,3 +10,6 @@ src/render/templates.generated.ts
 
 # Output of test/bench.test.ts (BENCH=1).
 _bench*
+
+# Output of scripts/logo-preview.mjs.
+_logo_preview.html
