@@ -21,6 +21,9 @@ const app = new Hono<{ Bindings: Env }>();
 const HTML_HEADERS = {
   'Content-Type': 'text/html; charset=utf-8',
   'Cache-Control': 'public, max-age=60, s-maxage=120',
+  // This URL answers crawlers with embed markup and humans with a redirect, so
+  // a shared cache must not hand one audience the other's response.
+  Vary: 'User-Agent',
 };
 
 /** Resolve a target all the way to parsed data, going through the KV cache. */
