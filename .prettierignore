@@ -1,0 +1,8 @@
+node_modules/
+.wrangler/
+pnpm-lock.yaml
+# Generated - regenerate with `pnpm cf-typegen` / `pnpm build:templates`.
+worker-configuration.d.ts
+src/render/templates.generated.ts
+# Fixtures mirror dcinside's markup; reformatting would defeat their purpose.
+test/fixtures/

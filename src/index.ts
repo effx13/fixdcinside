@@ -1,0 +1,120 @@
+import { Hono } from 'hono';
+import { withCache } from './cache';
+import { LIST_CACHE_TTL, POST_CACHE_TTL } from './constants';
+import { DcFetchError, fetchPage } from './fetcher/dcinside';
+import { decodeMediaUrl, proxyMedia } from './fetcher/media';
+import { parseList } from './parser/list';
+import { ParseError, parsePost } from './parser/post';
+import { buildDcUrl, canonicalDcUrl, parseTarget } from './parser/url';
+import { renderListEmbed, renderOembed, renderPostEmbed, type EmbedContext } from './render/embed';
+import type { GalleryList, Post, Target } from './types';
+import { isBot } from './util/bots';
+
+const app = new Hono<{ Bindings: Env }>();
+
+const HTML_HEADERS = {
+  'Content-Type': 'text/html; charset=utf-8',
+  'Cache-Control': 'public, max-age=60, s-maxage=120',
+};
+
+/** Resolve a target all the way to parsed data, going through the KV cache. */
+async function resolve(
+  target: Target,
+  env: Env,
+  waitUntil?: (promise: Promise<unknown>) => void,
+): Promise<{ value: Post | GalleryList; hit: boolean }> {
+  const dcUrl = buildDcUrl(target);
+  const ttl = target.kind === 'post' ? POST_CACHE_TTL : LIST_CACHE_TTL;
+
+  return withCache(env, target.kind, dcUrl, { ttl, waitUntil }, async () => {
+    const { html, layout } = await fetchPage(target, dcUrl);
+    return target.kind === 'post'
+      ? parsePost(html, target, canonicalDcUrl(target), layout)
+      : parseList(html, target, dcUrl);
+  });
+}
+
+function errorResponse(error: unknown): Response {
+  if (error instanceof DcFetchError) {
+    const status = error.status === 404 ? 404 : 502;
+    return new Response(`디시인사이드에서 글을 가져오지 못했습니다 (${error.status}).`, { status });
+  }
+  if (error instanceof ParseError) {
+    return new Response('글을 해석하지 못했습니다. 삭제되었거나 접근이 제한된 글일 수 있습니다.', {
+      status: 404,
+    });
+  }
+  if (error instanceof DOMException && error.name === 'TimeoutError') {
+    return new Response('디시인사이드 응답이 너무 느립니다.', { status: 504 });
+  }
+  return new Response('알 수 없는 오류가 발생했습니다.', { status: 500 });
+}
+
+/** Nothing to serve at the root - send people to the project page. */
+app.get('/', (c) => c.redirect(c.env.REPO_URL, 302));
+
+app.get('/robots.txt', (c) => c.text('User-agent: *\nDisallow: /media/\nAllow: /\n'));
+
+app.get('/oembed', (c) =>
+  c.json(renderOembed(new URL(c.req.url).searchParams, c.env), 200, {
+    'Cache-Control': 'public, max-age=3600',
+  }),
+);
+
+/** Proxy dcinside media, adding the Referer that its hotlink check requires. */
+app.get('/media/:token', async (c) => {
+  const url = decodeMediaUrl(c.req.param('token'));
+  if (!url) return c.text('bad media token', 400);
+  return proxyMedia(url, c.req.raw);
+});
+
+/** JSON view of anything the embed routes can render. */
+app.get('/api/*', async (c) => {
+  const url = new URL(c.req.url);
+  url.pathname = url.pathname.replace(/^\/api/, '') || '/';
+  const target = parseTarget(url);
+  if (!target) return c.json({ error: 'unsupported dcinside url' }, 400);
+
+  try {
+    const { value, hit } = await resolve(target, c.env, c.executionCtx.waitUntil.bind(c.executionCtx));
+    return c.json({ ok: true, kind: target.kind, data: value }, 200, {
+      'Cache-Control': 'public, max-age=60',
+      'Access-Control-Allow-Origin': '*',
+      'X-Cache': hit ? 'HIT' : 'MISS',
+    });
+  } catch (error) {
+    const response = errorResponse(error);
+    return c.json({ ok: false, error: await response.text() }, response.status as 400);
+  }
+});
+
+/**
+ * Everything else is treated as a mirrored dcinside URL: crawlers get embed
+ * markup, humans get bounced to the real page.
+ */
+app.get('*', async (c) => {
+  const url = new URL(c.req.url);
+  const target = parseTarget(url);
+  if (!target) return c.notFound();
+
+  const dcUrl = buildDcUrl(target);
+  if (!isBot(c.req.header('User-Agent'))) {
+    return c.redirect(dcUrl, 302);
+  }
+
+  const ctx: EmbedContext = { env: c.env, origin: url.origin };
+  try {
+    const { value, hit } = await resolve(target, c.env, c.executionCtx.waitUntil.bind(c.executionCtx));
+    const html =
+      target.kind === 'post'
+        ? renderPostEmbed(value as Post, ctx)
+        : renderListEmbed(value as GalleryList, ctx);
+    return c.html(html, 200, { ...HTML_HEADERS, 'X-Cache': hit ? 'HIT' : 'MISS' });
+  } catch (error) {
+    return errorResponse(error);
+  }
+});
+
+app.notFound((c) => c.text('지원하지 않는 주소입니다.', 404));
+
+export default app;
