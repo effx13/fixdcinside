@@ -4,10 +4,15 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-09-03",
   "compatibility_flags": ["nodejs_compat"],
+  // dcinside is single-homed in Korea. Without this the Worker runs wherever
+  // the request lands - measured in Los Angeles - and every one of its several
+  // round trips to dcinside crosses the Pacific. The probe puts execution in
+  // the data centre closest to dcinside instead.
+  "placement": { "hostname": "gall.dcinside.com" },
   "observability": { "enabled": true },
   "vars": {
     // BRAND_NAME shows up in og:site_name; BRAND_HOST is the deployed domain.
-    "BRAND_NAME": "fixdcinside",
+    "BRAND_NAME": "FixDcinside",
     "BRAND_HOST": "fixdcinside.com",
     // A bare visit to / redirects here.
     "REPO_URL": "https://github.com/effx13/fixdcinside",

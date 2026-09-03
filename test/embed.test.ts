@@ -13,7 +13,7 @@ import { escapeHtml } from '../src/util/html';
 
 const fixture = (name: string) => readFileSync(join(__dirname, 'fixtures', name), 'utf8');
 const env: Env = {
-  BRAND_NAME: 'fixdcinside',
+  BRAND_NAME: 'FixDcinside',
   BRAND_HOST: 'fixdcinside.com',
   REPO_URL: 'https://github.com/effx13/fixdcinside',
   // Rendering never touches KV; the cache is exercised through the Worker.
@@ -76,16 +76,13 @@ describe('renderPostEmbed', () => {
     expect(description).not.toMatch(/동영상 d+개/);
   });
 
-  it('names the gallery in the oEmbed provider, which Discord shows above the title', () => {
-    // Discord's provider line overrides og:site_name, so the gallery has to be here.
-    expect(oembedParams(html).get('provider')).toMatch(/^조립 마이너 갤러리 · /);
+  it('puts writer, gallery and counters on the oEmbed author line', () => {
+    // Discord shows author_name above the title; og:site_name alone gets nothing.
+    expect(oembedParams(html).get('author')).toBe(
+      '쿨링덕후 · 조립 마이너 갤러리 · 👁️ 12,048   👍 132   👎 4   💬 47',
+    );
     // og:site_name is the fallback for platforms that ignore oEmbed.
-    expect(html).toContain('content="fixdcinside · 조립 마이너 갤러리"');
-  });
-
-  it('still carries the counters alongside the gallery', () => {
-    expect(oembedParams(html).get('provider')).toContain('12,048');
-    expect(oembedParams(html).get('author')).toBe('쿨링덕후');
+    expect(html).toContain('content="FixDcinside · 조립 마이너 갤러리"');
   });
 
   it('escapes markup from post content', () => {
@@ -183,8 +180,8 @@ describe('renderListEmbed', () => {
     expect(html).not.toContain('갤러리 이용 안내');
   });
 
-  it('names the gallery in the oEmbed provider', () => {
-    expect(oembedParams(html).get('provider')).toMatch(/^조립 마이너 갤러리 · /);
+  it('names the gallery on the oEmbed author line', () => {
+    expect(oembedParams(html).get('author')).toMatch(/^조립 마이너 갤러리 · 글 /);
   });
 });
 

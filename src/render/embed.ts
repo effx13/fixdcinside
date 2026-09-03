@@ -36,7 +36,7 @@ function formatAuthor(post: Post): string {
 }
 
 function statsLine(post: Post): string {
-  const parts = [`👁 ${post.views.toLocaleString('ko-KR')}`, `👍 ${post.upvotes.toLocaleString('ko-KR')}`];
+  const parts = [`👁️ ${post.views.toLocaleString('ko-KR')}`, `👍 ${post.upvotes.toLocaleString('ko-KR')}`];
   if (post.downvotes > 0) parts.push(`👎 ${post.downvotes.toLocaleString('ko-KR')}`);
   parts.push(`💬 ${post.commentCount.toLocaleString('ko-KR')}`);
   return parts.join('   ');
@@ -47,12 +47,13 @@ function description(post: Post): string {
 }
 
 /**
- * Discord reads oEmbed to fill the two small lines above the embed title, and
- * its provider line *overrides* og:site_name - so the gallery has to be stated
- * here or it never shows up at all.
+ * Discord builds two lines from oEmbed: `author_name` becomes the line above
+ * the title, and `provider_name` becomes the footer it pairs with a timestamp.
+ * og:site_name alone gets neither, which is why everything worth showing has to
+ * be routed through here.
  */
-function oembedUrl(ctx: EmbedContext, author: string, provider: string, url: string): string {
-  const params = new URLSearchParams({ author, provider, url });
+function oembedUrl(ctx: EmbedContext, author: string, title: string, url: string): string {
+  const params = new URLSearchParams({ author, title, url });
   return `${ctx.origin}/oembed?${params.toString()}`;
 }
 
@@ -91,7 +92,12 @@ export function renderPostEmbed(post: Post, ctx: EmbedContext): string {
       images: images.slice(0, 4).map((image) => proxied(ctx, image.url)),
       imageWidth: lead?.width,
       imageHeight: lead?.height,
-      oembedUrl: oembedUrl(ctx, formatAuthor(post), `${post.galleryName} · ${statsLine(post)}`, post.url),
+      oembedUrl: oembedUrl(
+        ctx,
+        `${formatAuthor(post)} · ${post.galleryName} · ${statsLine(post)}`,
+        post.title,
+        post.url,
+      ),
     },
     escapeFn,
   );
@@ -113,8 +119,8 @@ export function renderListEmbed(list: GalleryList, ctx: EmbedContext): string {
       themeColor: THEME_COLOR,
       oembedUrl: oembedUrl(
         ctx,
-        `${list.galleryName} (${list.galleryId})`,
         `${list.galleryName} · 글 ${posts.length}개 · 공지 ${noticeCount}개`,
+        list.galleryName,
         list.url,
       ),
     },
@@ -125,10 +131,12 @@ export function renderListEmbed(list: GalleryList, ctx: EmbedContext): string {
 export function renderOembed(params: URLSearchParams, env: Env): Record<string, unknown> {
   return {
     version: '1.0',
-    type: 'link',
+    // "rich" is what makes Discord render the provider as a footer.
+    type: 'rich',
+    title: params.get('title') ?? env.BRAND_NAME,
     author_name: params.get('author') ?? '',
-    author_url: params.get('url') ?? '',
-    provider_name: params.get('provider') ?? env.BRAND_NAME,
-    provider_url: params.get('url') ?? `https://${env.BRAND_HOST}`,
+    author_url: params.get('url') ?? `https://${env.BRAND_HOST}`,
+    provider_name: env.BRAND_NAME,
+    provider_url: env.REPO_URL,
   };
 }
