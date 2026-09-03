@@ -18,6 +18,7 @@ const templateDir = join(root, 'templates');
 const outFile = join(root, 'src', 'render', 'templates.generated.ts');
 const iconFile = join(root, 'assets', 'icon.svg');
 const faviconFile = join(root, 'assets', 'favicon.ico');
+const PNG_SIZES = [16, 24, 32, 48, 64];
 
 /** `post.ejs` -> `renderPostTemplate` */
 const exportName = (file) =>
@@ -68,6 +69,15 @@ type TemplateLocals = Record<string, any>;
 const icon = [
   `export const ICON_SVG = ${JSON.stringify(readFileSync(iconFile, 'utf8').trim())};`,
   `export const FAVICON_ICO_BASE64 = ${JSON.stringify(readFileSync(faviconFile).toString('base64'))};`,
+  `export const ICON_PNG_SIZES = ${JSON.stringify(PNG_SIZES)};`,
+  `export const ICON_PNG_BASE64: Record<string, string> = ${JSON.stringify(
+    Object.fromEntries(
+      PNG_SIZES.map((size) => [
+        String(size),
+        readFileSync(join(root, 'assets', `icon-${size}.png`)).toString('base64'),
+      ]),
+    ),
+  )};`,
 ].join('\n\n');
 
 writeFileSync(outFile, `${banner}\n${icon}\n\n${files.map(compile).join('\n\n')}\n`);

@@ -1,9 +1,10 @@
 /**
- * Rasterise assets/icon.svg into assets/favicon.ico.
+ * Rasterise assets/icon.svg into assets/favicon.ico and assets/icon-<n>.png.
  *
- * The SVG stays the single source of truth; this exists because browsers still
- * probe /favicon.ico and will not accept SVG there. Run `pnpm build:favicon`
- * after editing the icon.
+ * The SVG stays the single source of truth. The .ico exists because browsers
+ * still probe /favicon.ico; the PNGs exist because Discord wants a bitmap icon
+ * for the site row on an embed and does not take .ico or SVG for it.
+ * Run `pnpm build:favicon` after editing the icon.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -13,7 +14,7 @@ import { initWasm, Resvg } from '@resvg/resvg-wasm';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 // The classic favicon ladder. Anything larger belongs in the SVG, which
 // browsers prefer anyway when it is offered.
-const SIZES = [16, 32, 48, 64];
+const SIZES = [16, 24, 32, 48, 64];
 
 /** Pack PNGs into an ICO container. Windows Vista and every modern browser read PNG-in-ICO. */
 function buildIco(images) {
@@ -50,6 +51,11 @@ const images = SIZES.map((size) => ({
   data: Buffer.from(new Resvg(svg, { fitTo: { mode: 'width', value: size } }).render().asPng()),
 }));
 
-const ico = buildIco(images);
+const ico = buildIco(images.filter((image) => image.size <= 64));
 writeFileSync(join(root, 'assets/favicon.ico'), ico);
-console.log(`wrote assets/favicon.ico (${SIZES.join(', ')}px, ${ico.length} bytes)`);
+console.log(`wrote assets/favicon.ico (${images.map((i) => i.size).join(', ')}px, ${ico.length} bytes)`);
+
+for (const { size, data } of images) {
+  writeFileSync(join(root, `assets/icon-${size}.png`), data);
+}
+console.log(`wrote ${images.length} PNGs (assets/icon-<size>.png)`);

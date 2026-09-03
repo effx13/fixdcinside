@@ -13,7 +13,7 @@ import {
   renderPostEmbed,
   type EmbedContext,
 } from './render/embed';
-import { FAVICON_ICO_BASE64, ICON_SVG } from './render/templates.generated';
+import { FAVICON_ICO_BASE64, ICON_PNG_BASE64, ICON_PNG_SIZES, ICON_SVG } from './render/templates.generated';
 import type { GalleryList, Post, Target } from './types';
 import { isBot } from './util/bots';
 
@@ -64,7 +64,13 @@ function errorResponse(error: unknown): Response {
 app.get('/', (c) => c.redirect(c.env.REPO_URL, 302));
 
 /** Decoded once per isolate rather than on every request. */
-const FAVICON_ICO = Uint8Array.from(atob(FAVICON_ICO_BASE64), (char) => char.charCodeAt(0));
+const decode = (base64: string): Uint8Array<ArrayBuffer> =>
+  Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
+
+const FAVICON_ICO = decode(FAVICON_ICO_BASE64);
+const ICON_PNGS = new Map(
+  ICON_PNG_SIZES.map((size) => [String(size), decode(ICON_PNG_BASE64[String(size)] ?? '')]),
+);
 
 app.get('/favicon.ico', (c) =>
   c.body(FAVICON_ICO, 200, {
@@ -72,6 +78,18 @@ app.get('/favicon.ico', (c) =>
     'Cache-Control': 'public, max-age=86400',
   }),
 );
+
+/** Discord wants a bitmap icon for the site row on an embed. */
+for (const size of ICON_PNG_SIZES) {
+  const png = ICON_PNGS.get(String(size));
+  if (!png) continue;
+  app.get(`/icon-${size}.png`, (c) =>
+    c.body(png, 200, {
+      'Content-Type': 'image/png',
+      'Cache-Control': 'public, max-age=86400',
+    }),
+  );
+}
 
 app.get('/icon.svg', (c) =>
   c.body(ICON_SVG, 200, {

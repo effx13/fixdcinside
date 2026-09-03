@@ -4,7 +4,7 @@ import { isContentMedia, pickCover } from '../parser/media';
 import { truncate } from '../parser/text';
 import type { GalleryList, Media, Post } from '../types';
 import { escapeHtml } from '../util/html';
-import { renderListTemplate, renderPostTemplate } from './templates.generated';
+import { ICON_PNG_SIZES, renderListTemplate, renderPostTemplate } from './templates.generated';
 
 /** Shows up as the coloured bar on the left of a Discord embed. */
 const THEME_COLOR = '#3b4890';
@@ -25,6 +25,16 @@ const escapeFn = (value: unknown): string => {
   if (typeof value === 'number' || typeof value === 'boolean') return escapeHtml(value.toString());
   return '';
 };
+
+/** Icon links, the set Discord looks through for the site row on an embed. */
+function iconLinks(ctx: EmbedContext) {
+  return {
+    iconSvg: `${ctx.origin}/icon.svg`,
+    iconIco: `${ctx.origin}/favicon.ico`,
+    appleIcon: `${ctx.origin}/icon-64.png`,
+    iconPngs: ICON_PNG_SIZES.map((size) => ({ size, url: `${ctx.origin}/icon-${size}.png` })),
+  };
+}
 
 function proxied(ctx: EmbedContext, url: string): string {
   return `${ctx.origin}/media/${encodeMediaUrl(url)}`;
@@ -89,8 +99,7 @@ export function renderPostEmbed(post: Post, ctx: EmbedContext): string {
       images: images.slice(0, 4).map((image) => proxied(ctx, image.url)),
       imageWidth: lead?.width,
       imageHeight: lead?.height,
-      iconSvg: `${ctx.origin}/icon.svg`,
-      iconIco: `${ctx.origin}/favicon.ico`,
+      ...iconLinks(ctx),
       oembedUrl: oembedUrl(
         ctx,
         `${formatAuthor(post)} · ${post.galleryName} · ${statsLine(post)}`,
@@ -116,8 +125,7 @@ export function renderListEmbed(list: GalleryList, ctx: EmbedContext): string {
       description: truncate(lines.join('\n'), 600) || `${list.galleryName}에 표시할 글이 없습니다.`,
       siteName: `${ctx.env.BRAND_NAME} · 갤러리`,
       themeColor: THEME_COLOR,
-      iconSvg: `${ctx.origin}/icon.svg`,
-      iconIco: `${ctx.origin}/favicon.ico`,
+      ...iconLinks(ctx),
       oembedUrl: oembedUrl(
         ctx,
         `${list.galleryName} · 글 ${posts.length}개 · 공지 ${noticeCount}개`,

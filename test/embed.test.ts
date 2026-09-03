@@ -57,6 +57,9 @@ describe('renderPostEmbed', () => {
   it('points at the icons Discord shows beside the footer', () => {
     expect(html).toContain('<link rel="icon" href="https://fixdcinside.com/icon.svg"');
     expect(html).toContain('<link rel="icon" href="https://fixdcinside.com/favicon.ico"');
+    // Discord wants a bitmap; .ico and SVG are not enough on their own.
+    expect(html).toContain('href="https://fixdcinside.com/icon-32.png" type="image/png"');
+    expect(html).toContain('rel="apple-touch-icon"');
   });
 
   it('routes images through the proxy rather than linking dcinside directly', () => {

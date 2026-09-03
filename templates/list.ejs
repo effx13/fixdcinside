@@ -13,7 +13,11 @@
 <meta name="theme-color" content="<%= it.themeColor %>">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="<%= it.iconSvg %>" type="image/svg+xml" sizes="any">
+<% for (const png of it.iconPngs) { -%>
+<link rel="icon" href="<%= png.url %>" type="image/png" sizes="<%= png.size %>x<%= png.size %>">
+<% } -%>
 <link rel="icon" href="<%= it.iconIco %>" type="image/x-icon" sizes="32x32">
+<link rel="apple-touch-icon" href="<%= it.appleIcon %>">
 <link rel="alternate" type="application/json+oembed" href="<%= it.oembedUrl %>" title="<%= it.title %>">
 <link rel="canonical" href="<%= it.url %>">
 <meta http-equiv="refresh" content="0; url=<%= it.url %>">
