@@ -123,16 +123,45 @@ LIVE=1 pnpm test
 
 ## 배포
 
+배포할 Cloudflare 계정은 `CLOUDFLARE_ACCOUNT_ID` 환경변수로 지정합니다. 계정 id는 저장소에
+커밋하지 마세요.
+
 ```bash
-pnpm wrangler deploy
+# 1. 로그인 (대화형 터미널에서)
+pnpm wrangler login
+
+# 2. KV 네임스페이스 생성 - 출력된 id를 wrangler.jsonc의 kv_namespaces에 붙여넣기
+pnpm wrangler kv namespace create CACHE
+
+# 3. 바인딩이 바뀌었으니 타입 재생성
+pnpm cf-typegen
+
+# 4. 배포
+pnpm deploy
 ```
 
-배포 전에 `wrangler.jsonc`에서 다음을 바꾸세요.
+배포 전에 `wrangler.jsonc`의 `vars`에서 `BRAND_NAME`, `BRAND_HOST`, `REPO_URL`을 실제 도메인에 맞게
+바꾸세요. `BRAND_HOST`는 표시용이고, 이미지 프록시 주소는 요청이 들어온 오리진에서 자동으로 만들어집니다.
 
-- `vars`의 `BRAND_NAME`, `BRAND_HOST`, `REPO_URL`
-- `kv_namespaces`의 `id` (위 "캐시(KV)" 참고)
+커스텀 도메인을 붙이려면 `wrangler.jsonc`에 라우트를 추가합니다.
 
-`wrangler.jsonc`를 수정한 뒤에는 `pnpm cf-typegen`으로 타입을 다시 생성합니다.
+```jsonc
+"routes": [{ "pattern": "fixdcinside.com/*", "zone_name": "fixdcinside.com" }]
+```
+
+### GitHub Actions
+
+`.github/workflows/ci.yml`이 PR마다 `pnpm check`를 돌리고, `main`에 푸시되면 배포합니다.
+저장소 시크릿에 `CLOUDFLARE_API_TOKEN`(Workers 편집 권한)과 `CLOUDFLARE_ACCOUNT_ID`를 넣어주세요.
+
+### 배포 후 확인
+
+```bash
+curl -A "Discordbot/2.0" -i "https://<도메인>/board/view/?id=cat&no=1958907" | head -30
+```
+
+`og:image`에 적힌 `/media/...` 주소가 `200`과 `image/jpeg`를 돌려주면 디스코드에서도 이미지가 뜹니다.
+`X-Cache` 헤더로 KV 캐시가 붙었는지 확인할 수 있습니다.
 
 ## 알려진 한계
 

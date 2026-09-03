@@ -6,7 +6,7 @@
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
   "vars": {
-    // Shown in embeds and on the landing page. Override per-environment.
+    // BRAND_NAME shows up in og:site_name; BRAND_HOST is the deployed domain.
     "BRAND_NAME": "fixdcinside",
     "BRAND_HOST": "fixdcinside.com",
     // A bare visit to / redirects here.
