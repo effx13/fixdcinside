@@ -74,13 +74,10 @@ export function renderPostEmbed(post: Post, ctx: EmbedContext): string {
 
   return renderPostTemplate(
     {
-      type: video ? 'video.other' : 'article',
       url: post.url,
       title: post.title,
       description: description(post),
       siteName: `${ctx.env.BRAND_NAME} · ${post.galleryName}`,
-      author: formatAuthor(post),
-      publishedTime: post.createdAt,
       themeColor: THEME_COLOR,
       twitterCard: video ? 'player' : lead ? 'summary_large_image' : 'summary',
       video: video && {
@@ -92,6 +89,8 @@ export function renderPostEmbed(post: Post, ctx: EmbedContext): string {
       images: images.slice(0, 4).map((image) => proxied(ctx, image.url)),
       imageWidth: lead?.width,
       imageHeight: lead?.height,
+      iconSvg: `${ctx.origin}/icon.svg`,
+      iconIco: `${ctx.origin}/favicon.ico`,
       oembedUrl: oembedUrl(
         ctx,
         `${formatAuthor(post)} · ${post.galleryName} · ${statsLine(post)}`,
@@ -117,6 +116,8 @@ export function renderListEmbed(list: GalleryList, ctx: EmbedContext): string {
       description: truncate(lines.join('\n'), 600) || `${list.galleryName}에 표시할 글이 없습니다.`,
       siteName: `${ctx.env.BRAND_NAME} · 갤러리`,
       themeColor: THEME_COLOR,
+      iconSvg: `${ctx.origin}/icon.svg`,
+      iconIco: `${ctx.origin}/favicon.ico`,
       oembedUrl: oembedUrl(
         ctx,
         `${list.galleryName} · 글 ${posts.length}개 · 공지 ${noticeCount}개`,

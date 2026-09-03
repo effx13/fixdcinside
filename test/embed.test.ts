@@ -47,6 +47,18 @@ describe('renderPostEmbed', () => {
     expect(html).toContain('<meta name="twitter:card" content="summary_large_image">');
   });
 
+  it('omits og:type on a post with no video', () => {
+    // og:type="article" makes Discord use its article layout, which drops the
+    // provider line that becomes the footer.
+    expect(html).not.toContain('og:type');
+    expect(html).not.toContain('article:');
+  });
+
+  it('points at the icons Discord shows beside the footer', () => {
+    expect(html).toContain('<link rel="icon" href="https://fixdcinside.com/icon.svg"');
+    expect(html).toContain('<link rel="icon" href="https://fixdcinside.com/favicon.ico"');
+  });
+
   it('routes images through the proxy rather than linking dcinside directly', () => {
     const images = [...html.matchAll(/property="og:image" content="([^"]+)"/g)].map((match) => match[1]);
     expect(images.length).toBeGreaterThan(0);

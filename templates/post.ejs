@@ -2,6 +2,11 @@
 /*
   Embed page for a single dcinside post.
 
+  The tag set is deliberately close to what FxEmbed sends. Notably there is no
+  og:type unless the post carries a video: with og:type="article" Discord
+  switches to an article layout and drops the provider line that becomes the
+  footer, which is where the project name and timestamp live.
+
   Compiled at build time by scripts/build-templates.mjs - Cloudflare Workers
   forbid runtime eval, so EJS cannot compile templates on the edge.
 */
@@ -11,24 +16,21 @@
 <head>
 <meta charset="utf-8">
 <title><%= it.title %></title>
-<meta property="og:type" content="<%= it.type %>">
 <meta property="og:url" content="<%= it.url %>">
 <meta property="og:title" content="<%= it.title %>">
 <meta property="og:description" content="<%= it.description %>">
 <meta property="og:site_name" content="<%= it.siteName %>">
-<meta property="article:author" content="<%= it.author %>">
-<% if (it.publishedTime) { -%>
-<meta property="article:published_time" content="<%= it.publishedTime %>">
-<% } -%>
-<meta name="author" content="<%= it.author %>">
 <meta name="theme-color" content="<%= it.themeColor %>">
 <meta name="twitter:card" content="<%= it.twitterCard %>">
 <% if (it.video) { -%>
+<meta property="og:type" content="video.other">
 <meta property="og:video" content="<%= it.video.url %>">
+<meta property="og:video:url" content="<%= it.video.url %>">
 <meta property="og:video:secure_url" content="<%= it.video.url %>">
 <meta property="og:video:type" content="video/mp4">
 <meta property="og:video:width" content="<%= it.video.width %>">
 <meta property="og:video:height" content="<%= it.video.height %>">
+<meta name="twitter:player" content="<%= it.video.url %>">
 <meta name="twitter:player:stream" content="<%= it.video.url %>">
 <meta name="twitter:player:stream:content_type" content="video/mp4">
 <meta name="twitter:player:width" content="<%= it.video.width %>">
@@ -44,6 +46,8 @@
 <% } -%>
 <meta name="twitter:image" content="<%= it.images[0] %>">
 <% } -%>
+<link rel="icon" href="<%= it.iconSvg %>" type="image/svg+xml" sizes="any">
+<link rel="icon" href="<%= it.iconIco %>" type="image/x-icon" sizes="32x32">
 <link rel="alternate" type="application/json+oembed" href="<%= it.oembedUrl %>" title="<%= it.title %>">
 <link rel="canonical" href="<%= it.url %>">
 <meta http-equiv="refresh" content="0; url=<%= it.url %>">
