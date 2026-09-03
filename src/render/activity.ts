@@ -23,7 +23,8 @@ interface ActivityAttachment {
   remote_url: null;
   preview_remote_url: null;
   text_url: null;
-  description: string | null;
+  /** Always null: dcinside puts its own file hash in alt, which is not a caption. */
+  description: null;
   /** Omitted when dcinside gives no dimensions; better absent than invented. */
   meta?: { original: { width: number; height: number } };
 }
@@ -40,7 +41,7 @@ function attachments(post: Post, origin: string): ActivityAttachment[] {
       remote_url: null,
       preview_remote_url: null,
       text_url: null,
-      description: item.alt ?? null,
+      description: null,
       ...(item.width && item.height
         ? { meta: { original: { width: item.width, height: item.height } } }
         : {}),
@@ -130,8 +131,11 @@ export function renderActivity(post: Post, origin: string, brand: string): Recor
     emojis: [],
     card: null,
     poll: null,
-    replies_count: post.commentCount,
+    // Left at zero on purpose. Discord renders these as its own Replies and
+    // Favorites rows, which would repeat the counters already in the content -
+    // and the content line can carry views, which Mastodon has no field for.
+    replies_count: 0,
     reblogs_count: 0,
-    favourites_count: post.upvotes,
+    favourites_count: 0,
   };
 }
