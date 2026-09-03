@@ -20,6 +20,8 @@
     "cf-typegen": "wrangler types"
   },
   "dependencies": {
+    "@jsquash/jpeg": "^1.6.0",
+    "@jsquash/png": "^3.1.1",
     "cheerio": "^1.2.0",
     "domhandler": "^6.0.1",
     "hono": "^4.13.5"

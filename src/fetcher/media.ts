@@ -66,6 +66,29 @@ export async function prefetchMedia(target: string): Promise<void> {
   }
 }
 
+/** Largest input the codecs are given; dcinside uploads sit well under it. */
+const MAX_INPUT_BYTES = 20 * 1024 * 1024;
+
+/**
+ * Fetch one media file as bytes, with the Referer dcinside insists on.
+ * Returns null for anything the mosaic builder cannot use.
+ */
+export async function fetchMediaBytes(target: string): Promise<ArrayBuffer | null> {
+  if (!isAllowedMediaUrl(target)) return null;
+  try {
+    const response = await fetch(target, {
+      headers: upstreamHeaders(null),
+      signal: AbortSignal.timeout(MEDIA_FETCH_TIMEOUT_MS),
+      cf: UPSTREAM_CACHE,
+    });
+    if (!response.ok) return null;
+    const bytes = await response.arrayBuffer();
+    return bytes.byteLength > 0 && bytes.byteLength <= MAX_INPUT_BYTES ? bytes : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * dcinside serves every image as `application/octet-stream`, which Discord
  * refuses to render. Sniff the real type from the magic bytes instead.

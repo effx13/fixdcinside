@@ -64,6 +64,7 @@ https://fixdcinside.com/api/mgallery/board/view/?id=sff&no=1719767
 - `src/parser/post.ts` · `list.ts` — PC/모바일 두 레이아웃 파싱
 - `src/parser/media.ts` — 사진·디시콘·동영상·외부 임베드 추출 (모바일의 `data-original` 지연 로딩 포함)
 - `src/fetcher/media.ts` — 이미지 프록시. 디시 호스트만 허용해 오픈 프록시가 되지 않게 막습니다
+- `src/fetcher/mosaic.ts` — 사진 여러 장을 한 장으로 합성 (WASM 코덱)
 - `src/render/embed.ts` — 임베드 뷰 모델 구성 후 EJS 템플릿 렌더
 - `src/cache.ts` — 파싱 결과 KV 캐시
 
@@ -90,6 +91,19 @@ pnpm build:favicon   # icon.svg를 고쳤을 때
 ```
 
 작업 중 눈으로 확인하려면 `node scripts/logo-preview.mjs`가 여러 크기로 렌더한 HTML을 만들어 줍니다.
+
+### 모자이크
+
+글에 사진이 2장 이상이면 `og:image`를 `/mosaic/...`로 보냅니다. 디스코드는 `og:image`가 여러 개면
+자체 격자 레이아웃으로 전환하는데, 그 레이아웃에는 하단 사이트 행(아이콘·이름·타임스탬프)이 없습니다.
+그래서 격자를 이미지 안에 구워 넣습니다 — FxEmbed가 별도 서비스로 하는 일을 여기서는 워커 안에서 합니다.
+
+합성은 `@jsquash`의 WASM 코덱(mozjpeg, libpng)으로 하며 Cloudflare Images 같은 유료 이미지 서비스는
+쓰지 않습니다. 사진은 잘라내지 않고 같은 너비로 세로 배치합니다 — dcinside 첨부는 619×59 배너부터
+세로로 긴 스크린샷까지 섞여 있어서, 고정 격자에 맞추면 반드시 뭔가 잘려 나갑니다.
+
+결과는 Cache API에 저장하고, 임베드를 렌더할 때 원본 사진들을 미리 받아둡니다. 합성에 실패하거나
+사진이 1장이면 대표 이미지로 리다이렉트합니다.
 
 ### 캐시 (KV)
 
