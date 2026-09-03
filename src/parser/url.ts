@@ -10,7 +10,6 @@ const BOARD_KINDS: BoardKind[] = ['mgallery', 'mini', 'person'];
 const RESERVED_PATHS = new Set([
   'api',
   'media',
-  'mosaic',
   'oembed',
   'robots.txt',
   'icon.svg',

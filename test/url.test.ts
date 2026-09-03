@@ -53,7 +53,6 @@ describe('parseTarget', () => {
     expect(parseTarget(at('/media/abc'))).toBeNull();
     expect(parseTarget(at('/api'))).toBeNull();
     expect(parseTarget(at('/oembed'))).toBeNull();
-    expect(parseTarget(at('/mosaic/gall/cat/1'))).toBeNull();
     expect(parseTarget(at('/robots.txt'))).toBeNull();
     expect(parseTarget(at('/icon.svg'))).toBeNull();
   });

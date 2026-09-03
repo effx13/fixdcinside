@@ -34,12 +34,6 @@ export const FORWARDED_PARAMS = [
   'headid',
 ];
 
-/** Mosaic sheet geometry: one column, photos at a common width. */
-export const MOSAIC_WIDTH = 1000;
-export const MOSAIC_MAX_HEIGHT = 3600;
-export const MOSAIC_GAP = 10;
-export const MOSAIC_QUALITY = 82;
-
 export const MAX_EMBED_DESCRIPTION = 340;
 export const FETCH_TIMEOUT_MS = 8000;
 

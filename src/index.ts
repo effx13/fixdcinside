@@ -2,14 +2,12 @@ import { Hono } from 'hono';
 import { withCache } from './cache';
 import { LIST_CACHE_TTL, POST_CACHE_TTL } from './constants';
 import { DcFetchError, fetchPage } from './fetcher/dcinside';
-import { decodeMediaUrl, encodeMediaUrl, prefetchMedia, proxyMedia } from './fetcher/media';
-import { buildMosaic } from './fetcher/mosaic';
+import { decodeMediaUrl, prefetchMedia, proxyMedia } from './fetcher/media';
 import { parseList } from './parser/list';
 import { ParseError, parsePost } from './parser/post';
 import { buildDcUrl, canonicalDcUrl, parseTarget } from './parser/url';
 import {
   embedCoverUrl,
-  mosaicSources,
   renderListEmbed,
   renderOembed,
   renderPostEmbed,
@@ -108,53 +106,6 @@ app.get('/oembed', (c) =>
   }),
 );
 
-/**
- * Stitch a post's photos into one image.
- *
- * Falls back to a redirect to the single cover whenever a sheet cannot be
- * built, so the embed always has something to show.
- */
-app.get('/mosaic/:board/:id/:no', async (c) => {
-  const target = parseTarget(
-    new URL(
-      `${new URL(c.req.url).origin}/${c.req.param('board')}/board/view/?id=${c.req.param('id')}&no=${c.req.param('no')}`,
-    ),
-  );
-  if (!target || target.kind !== 'post') return c.notFound();
-
-  const cache = caches.default;
-  const cached = await cache.match(c.req.raw);
-  if (cached) return cached;
-
-  const waitUntil = c.executionCtx.waitUntil.bind(c.executionCtx);
-  try {
-    const { value } = await resolve(target, c.env, waitUntil);
-    const urls = mosaicSources(value as Post);
-    const sheet = urls.length >= 2 ? await buildMosaic(urls) : null;
-
-    if (!sheet) {
-      const cover = urls[0];
-      return cover
-        ? c.redirect(`${new URL(c.req.url).origin}/media/${encodeMediaUrl(cover)}`, 302)
-        : c.notFound();
-    }
-
-    const response = new Response(sheet, {
-      status: 200,
-      headers: {
-        'Content-Type': 'image/jpeg',
-        'Content-Length': String(sheet.byteLength),
-        'Cache-Control': 'public, max-age=86400, immutable',
-        'Access-Control-Allow-Origin': '*',
-      },
-    });
-    waitUntil(cache.put(c.req.raw, response.clone()));
-    return response;
-  } catch (error) {
-    return errorResponse(error);
-  }
-});
-
 /** Proxy dcinside media, adding the Referer that its hotlink check requires. */
 app.get('/media/:token', async (c) => {
   const url = decodeMediaUrl(c.req.param('token'));
@@ -206,12 +157,9 @@ app.get('*', async (c) => {
       const post = value as Post;
       html = renderPostEmbed(post, ctx);
       // The crawler asks for og:image right after this response. Start pulling
-      // the source photos now so that request lands on a warm cache instead of
-      // a slow origin - and so a mosaic has its inputs ready to decode.
-      const sources = mosaicSources(post);
+      // it now so that request lands on a warm cache instead of a 4s origin.
       const cover = embedCoverUrl(post);
-      const warm = sources.length >= 2 ? sources : cover ? [cover] : [];
-      for (const url of warm) waitUntil(prefetchMedia(url));
+      if (cover) waitUntil(prefetchMedia(cover));
     } else {
       html = renderListEmbed(value as GalleryList, ctx);
     }

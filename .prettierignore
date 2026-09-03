@@ -8,4 +8,3 @@ src/render/templates.generated.ts
 test/fixtures/
 _bench*
 _logo_preview.html
-_mosaic*

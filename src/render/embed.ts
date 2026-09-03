@@ -67,14 +67,6 @@ function oembedUrl(ctx: EmbedContext, author: string, title: string, url: string
   return `${ctx.origin}/oembed?${params.toString()}`;
 }
 
-/** The photos a mosaic would be built from, in document order. */
-export function mosaicSources(post: Post): string[] {
-  return post.media
-    .filter((item) => item.kind === 'image' && isContentMedia(item) && isAllowedMediaUrl(item.url))
-    .slice(0, 4)
-    .map((item) => item.url);
-}
-
 /** The image a crawler will ask for next, if any - see prefetchMedia. */
 export function embedCoverUrl(post: Post): string | undefined {
   return pickCover(post.media.filter((item) => isContentMedia(item) && isAllowedMediaUrl(item.url)))?.url;
@@ -89,12 +81,6 @@ export function renderPostEmbed(post: Post, ctx: EmbedContext): string {
   // A video embed replaces the image card entirely, so only one of the two runs.
   const images = video ? [] : usable.filter((item) => item.kind === 'image' || item.kind === 'dccon');
   const lead = images[0];
-  const sources = mosaicSources(post);
-  const coverUrl = video
-    ? undefined
-    : sources.length >= 2
-      ? `${ctx.origin}/mosaic/${post.board}/${post.galleryId}/${post.no}`
-      : lead && proxied(ctx, lead.url);
 
   return renderPostTemplate(
     {
@@ -109,14 +95,12 @@ export function renderPostEmbed(post: Post, ctx: EmbedContext): string {
         width: video.width ?? 1280,
         height: video.height ?? 720,
       },
-      // Exactly one tag, always. Several og:image tags make Discord render its
-      // own grid, and that layout drops the site row - the footer carrying the
-      // icon, project name and timestamp. When a post has several photos the
-      // one image is a mosaic sheet with them stitched together.
-      images: coverUrl ? [coverUrl] : [],
-      // Only meaningful for a single photo; a mosaic's size is its own.
-      imageWidth: sources.length >= 2 ? undefined : lead?.width,
-      imageHeight: sources.length >= 2 ? undefined : lead?.height,
+      // Exactly one. Several og:image tags make Discord render an image grid,
+      // and that layout drops the site row - the footer carrying the project
+      // name, icon and timestamp - and moves the provider to the top instead.
+      images: images.slice(0, 1).map((image) => proxied(ctx, image.url)),
+      imageWidth: lead?.width,
+      imageHeight: lead?.height,
       ...iconLinks(ctx),
       oembedUrl: oembedUrl(
         ctx,

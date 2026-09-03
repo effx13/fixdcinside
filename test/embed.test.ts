@@ -62,44 +62,16 @@ describe('renderPostEmbed', () => {
     expect(html).toContain('rel="apple-touch-icon"');
   });
 
-  it('points a multi-photo post at the mosaic, not at one of the photos', () => {
-    const multi: Post = {
-      ...post,
-      media: [
-        { kind: 'image', url: 'https://dcimg6.dcinside.co.kr/viewimage.php?id=a' },
-        { kind: 'image', url: 'https://dcimg6.dcinside.co.kr/viewimage.php?id=b' },
-      ],
-    };
-    const rendered = renderPostEmbed(multi, ctx);
-    const images = [...rendered.matchAll(/property="og:image" content="([^"]+)"/g)];
-    expect(images).toHaveLength(1);
-    expect(images[0]?.[1]).toBe('https://fixdcinside.com/mosaic/mgallery/itxbuild/464460');
-  });
-
-  it('links a single photo directly rather than through the mosaic', () => {
-    const single: Post = {
-      ...post,
-      media: [{ kind: 'image', url: 'https://dcimg6.dcinside.co.kr/viewimage.php?id=a' }],
-    };
-    expect(renderPostEmbed(single, ctx)).toContain('/media/');
-  });
-
   it('advertises exactly one image, which keeps Discord out of its grid layout', () => {
     const images = [...html.matchAll(/property="og:image" content="([^"]+)"/g)].map((match) => match[1]);
     expect(images).toHaveLength(1);
-    expect(images[0]?.startsWith('https://fixdcinside.com/')).toBe(true);
-    // dcinside is never linked directly - it rejects hotlinked requests.
+    expect(images.every((url) => url?.startsWith('https://fixdcinside.com/media/'))).toBe(true);
     expect(html).not.toContain('dcimg6.dcinside.co.kr');
   });
 
   it('proxy links decode back to the original dcinside url', () => {
-    const single: Post = {
-      ...post,
-      media: [{ kind: 'image', url: 'https://dcimg6.dcinside.co.kr/viewimage.php?id=solo' }],
-    };
-    const rendered = renderPostEmbed(single, ctx);
-    const token = rendered.split('/media/')[1]?.split('"')[0] ?? '';
-    expect(decodeMediaUrl(token)).toBe('https://dcimg6.dcinside.co.kr/viewimage.php?id=solo');
+    const token = html.match(/\/media\/([A-Za-z0-9_-]+)"/)?.[1];
+    expect(decodeMediaUrl(token!)).toBe(post.media[0]?.url);
   });
 
   it('puts the author and stats in the oEmbed link', () => {
