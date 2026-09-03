@@ -14,6 +14,7 @@
   "routes": [
     { "pattern": "fixdcinside.com", "zone_name": "fixdcinside.com", "custom_domain": true },
     { "pattern": "gall.fixdcinside.com", "zone_name": "fixdcinside.com", "custom_domain": true },
+    { "pattern": "m.fixdcinside.com", "zone_name": "fixdcinside.com", "custom_domain": true },
   ],
   "observability": { "enabled": true },
   "vars": {
