@@ -28,6 +28,16 @@ function pickExtra(params: URLSearchParams): Record<string, string> {
 }
 
 /**
+ * Discord requests a spoilered link with the closing `||` still on it, so
+ * `||https://.../sff/1||` arrives as `/sff/1||` and the post number no longer
+ * parses. Nothing dcinside uses ends in a pipe, so dropping them is safe.
+ */
+function stripSpoiler(url: URL): URL {
+  const href = url.href.replace(/(?:\||%7C)+$/i, '');
+  return href === url.href ? url : new URL(href);
+}
+
+/**
  * Turn an incoming request URL into a dcinside target.
  *
  * Accepts every shape a user might paste after swapping the host:
@@ -39,7 +49,8 @@ function pickExtra(params: URLSearchParams): Record<string, string> {
  *   /sff/1719767                             (shorthand)
  *   /sff                                     (shorthand list)
  */
-export function parseTarget(url: URL): Target | null {
+export function parseTarget(raw: URL): Target | null {
+  const url = stripSpoiler(raw);
   const segments = url.pathname.split('/').filter(Boolean).map(decodeURIComponent);
   if (segments.length === 0) return null;
   if (RESERVED_PATHS.has(segments[0]!)) return null;

@@ -41,6 +41,17 @@ describe('parseTarget', () => {
     expect(parseTarget(at('/sff'))).toMatchObject({ kind: 'list', id: 'sff' });
   });
 
+  it('ignores the spoiler pipes Discord leaves on the end', () => {
+    expect(parseTarget(at('/mgallery/board/view/?id=sff&no=1719767||'))).toMatchObject({
+      kind: 'post',
+      id: 'sff',
+      no: '1719767',
+    });
+    expect(parseTarget(at('/board/view/?id=cat&no=1&page=2%7C%7C'))).toMatchObject({ extra: { page: '2' } });
+    expect(parseTarget(at('/sff/1719767||'))).toMatchObject({ kind: 'post', id: 'sff', no: '1719767' });
+    expect(parseTarget(at('/board/sff%7C%7C'))).toMatchObject({ kind: 'list', id: 'sff' });
+  });
+
   it('rejects junk', () => {
     expect(parseTarget(at('/'))).toBeNull();
     expect(parseTarget(at('/board/view/?no=1'))).toBeNull();
